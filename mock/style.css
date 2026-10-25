@@ -1,0 +1,161 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 1280px;
+  font-family: "Yu Gothic", "游ゴシック", YuGothic, "游ゴシック体", "Meiryo", sans-serif;
+  background: #f0f0f0;
+  color: #172b4d;
+}
+button, input, textarea, select { font-family: inherit; }
+
+.app-header {
+  padding: 14px 24px;
+  font-size: 20px;
+  font-weight: bold;
+  font-family: "Yu Gothic", "游ゴシック", YuGothic, "游ゴシック体", "Meiryo", sans-serif;
+  color: #fff;
+  background: #4a4f57; /* ボードの中で一番濃いグレー */
+}
+.mock-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: normal;
+  color: #fff;
+  background: #6b717a;
+  border-radius: 10px;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 24px;
+  align-items: start;
+}
+
+.column {
+  background: #c5d3e6; /* スチールブルー。ボードの背景(#f0f0f0)と見分けやすい青系 */
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 200px;
+}
+.column.drag-over { background: #a9bfdc; outline: 2px dashed #0079bf; }
+.column h2 { margin: 0 0 8px; font-size: 16px; }
+
+/* 列見出しの下の並べ替えボタン */
+.col-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.tool-btn {
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: #42526e;
+  background: #fff;
+  border: 1px solid #c1c7d0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.tool-btn:hover:not(:disabled) { background: #f4f5f7; }
+.tool-btn.active { color: #fff; background: #0079bf; border-color: #0079bf; }
+.tool-btn:disabled { color: #a5adba; background: #ebecf0; cursor: not-allowed; }
+.column.reorder-mode { background: #fff4d6; outline: 2px solid #f2a900; }
+.column.reorder-mode .card { cursor: grab; }
+
+.add-btn {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px;
+  text-align: left;
+  color: #42526e;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.add-btn:hover { background: rgba(9, 30, 66, 0.1); }
+
+.card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  border-left: 6px solid;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(9, 30, 66, 0.25);
+  cursor: pointer;
+}
+.card:hover { background: #f4f5f7; }
+.card.dragging { opacity: 0.4; }
+.card.p-高 { border-color: #eb5a46; }
+.card.p-中 { border-color: #f2d600; }
+.card.p-低 { border-color: #61bd4f; }
+
+.card.drop-before { box-shadow: 0 -3px 0 #0079bf; }
+.card.drop-after { box-shadow: 0 3px 0 #0079bf; }
+
+.card-title { font-size: 14px; word-break: break-all; }
+/* 優先度の文字色。黄は白地で読めるよう濃い黄土色にする */
+.pri { font-weight: bold; }
+.pri-高 { color: #d03a28; }
+.pri-中 { color: #a67c00; }
+.pri-低 { color: #2f8a1f; }
+.card-due { margin-top: 6px; font-size: 12px; color: #5e6c84; }
+.card-due.overdue { color: #d00; font-weight: bold; }
+
+.delete-btn {
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.delete-btn:hover { background: #ffe2dd; }
+
+/* モーダル */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 30, 66, 0.55);
+}
+.overlay[hidden] { display: none; }
+
+.dialog {
+  width: 440px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+}
+.dialog.small { width: 320px; text-align: center; }
+.dialog h2 { margin: 0 0 12px; font-size: 18px; }
+.dialog label { display: block; margin-bottom: 12px; font-size: 13px; font-weight: bold; }
+.dialog input[type="text"], .dialog textarea, .dialog select, .dialog input[type="date"] {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 8px;
+  font: inherit;
+  font-weight: normal;
+  border: 1px solid #c1c7d0;
+  border-radius: 4px;
+}
+.required { color: #d00; }
+.error { margin: -8px 0 12px; color: #d00; font-size: 13px; }
+
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.dialog.small .actions { justify-content: center; }
+.actions button {
+  padding: 6px 16px;
+  font: inherit;
+  border: 1px solid #c1c7d0;
+  border-radius: 4px;
+  background: #f4f5f7;
+  cursor: pointer;
+}
+.actions .primary { color: #fff; background: #0079bf; border-color: #0079bf; }
+.actions .danger { color: #fff; background: #d04437; border-color: #d04437; }

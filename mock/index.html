@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Management(モック)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">Task Management <span class="mock-badge">モック</span></header>
+
+  <main id="board" class="board"></main>
+
+  <!-- S-02 カード入力モーダル(追加・編集 共用) -->
+  <div id="card-modal" class="overlay" hidden>
+    <form id="card-form" class="dialog" novalidate>
+      <h2 id="card-modal-title">カードを追加</h2>
+
+      <label>タイトル <span class="required">*</span>
+        <input id="f-title" type="text" maxlength="50">
+      </label>
+      <p id="title-error" class="error" hidden>タイトルを入力してください</p>
+
+      <label>説明文
+        <textarea id="f-desc" rows="4" maxlength="500"></textarea>
+      </label>
+
+      <label>優先度 <span class="required">*</span>
+        <select id="f-priority">
+          <option value="高">高</option>
+          <option value="中">中</option>
+          <option value="低">低</option>
+        </select>
+      </label>
+
+      <label>期限
+        <input id="f-due" type="date">
+      </label>
+
+      <div class="actions">
+        <button type="button" id="card-cancel">キャンセル</button>
+        <button type="submit" class="primary">保存</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- S-03 削除確認ダイアログ -->
+  <div id="delete-modal" class="overlay" hidden>
+    <div class="dialog small">
+      <p>本当に削除しますか?</p>
+      <div class="actions">
+        <button type="button" id="delete-cancel">やめる</button>
+        <button type="button" id="delete-ok" class="danger">削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
