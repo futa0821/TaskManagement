@@ -56,11 +56,7 @@ button, input, textarea, select { font-family: inherit; }
   border-radius: 4px;
   cursor: pointer;
 }
-.tool-btn:hover:not(:disabled) { background: #f4f5f7; }
-.tool-btn.active { color: #fff; background: #0079bf; border-color: #0079bf; }
-.tool-btn:disabled { color: #a5adba; background: #ebecf0; cursor: not-allowed; }
-.column.reorder-mode { background: #fff4d6; outline: 2px solid #f2a900; }
-.column.reorder-mode .card { cursor: grab; }
+.tool-btn:hover { background: #f4f5f7; }
 
 .add-btn {
   width: 100%;

@@ -43,10 +43,6 @@ let editingId = null;  // null のとき追加モード
 let deletingId = null;
 let draggingId = null;
 
-// 列ごとの画面状態(保存しない)
-const sortState = { 1: null, 2: null, 3: null };  // null / "priority" / "due"
-const reorderCols = new Set();                    // 並べ替えモード中の列ID
-
 const PRIORITY_RANK = { "高": 0, "中": 1, "低": 2 };
 
 const $ = (id) => document.getElementById(id);
@@ -60,24 +56,11 @@ function isOverdue(ymd) {
   return ymd !== "" && ymd < toYmd(new Date()); // 昨日以前のみ
 }
 
-// 保存済みの並び(position の小さい順。同じ値なら id の大きい順)
+// 列の並び(position の小さい順。同じ値なら id の大きい順)
 function savedOrder(columnId) {
   return cards
     .filter((c) => c.columnId === columnId)
     .sort((a, b) => a.position - b.position || b.id - a.id);
-}
-
-// 画面に出す並び。優先度順・期限順は、保存済みの並びを土台にした安定ソート
-function displayOrder(columnId) {
-  const list = savedOrder(columnId);
-  const mode = sortState[columnId];
-  if (mode === "priority") {
-    list.sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
-  } else if (mode === "due") {
-    const key = (c) => (c.dueDate === "" ? "9999-99-99" : c.dueDate);
-    list.sort((a, b) => key(a).localeCompare(key(b)));
-  }
-  return list;
 }
 
 // 新しいカードを列の一番上に入れるための position
@@ -86,18 +69,52 @@ function topPosition(columnId) {
   return list.length === 0 ? 0 : Math.min(...list.map((c) => c.position)) - 1;
 }
 
+// 列のカードの position を、上から 1,2,3… に振り直す
+function renumber(list) {
+  list.forEach((c, i) => { c.position = i + 1; });
+}
+
+// 優先度順・期限順ボタン:押した列のカードを並べ替えて、その並びを保存する
+// 同じ優先度・同じ期限の中は、今の並びのまま(安定ソート)
+function sortColumn(columnId, mode) {
+  const list = savedOrder(columnId);
+  if (mode === "priority") {
+    list.sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
+  } else if (mode === "due") {
+    const key = (c) => (c.dueDate === "" ? "9999-99-99" : c.dueDate);
+    list.sort((a, b) => key(a).localeCompare(key(b)));
+  }
+  renumber(list);
+  render();
+}
+
+// ドラッグしたカードを、列 columnId の targetId の前(after なら後ろ)に入れる
+// targetId が null のときは、その列の一番下に入れる
+function placeCard(id, columnId, targetId, after) {
+  const moving = cards.find((x) => x.id === id);
+  if (!moving) return;
+  const list = savedOrder(columnId).filter((c) => c.id !== id);
+  let index = list.length;
+  if (targetId !== null) {
+    index = list.findIndex((c) => c.id === targetId) + (after ? 1 : 0);
+  }
+  moving.columnId = columnId;
+  list.splice(index, 0, moving);
+  renumber(list);
+  render();
+}
+
 function render() {
   const board = $("board");
   board.innerHTML = "";
   for (const col of COLUMNS) {
-    const list = displayOrder(col.id);
-    const inMode = reorderCols.has(col.id);
+    const list = savedOrder(col.id);
 
     const colEl = document.createElement("section");
-    colEl.className = "column" + (inMode ? " reorder-mode" : "");
+    colEl.className = "column";
     colEl.innerHTML = `<h2>${col.name} (${list.length})</h2>`;
 
-    colEl.appendChild(toolbar(col.id, inMode));
+    colEl.appendChild(toolbar(col.id));
 
     if (col.id === 1) {
       const add = document.createElement("button");
@@ -109,8 +126,9 @@ function render() {
 
     for (const c of list) colEl.appendChild(cardElement(c));
 
+    // 列の余白(カードの上以外)に落としたら、その列の一番下に入る
     colEl.addEventListener("dragover", (e) => {
-      if (!canDropOnColumn(col.id)) return;
+      if (draggingId === null) return;
       e.preventDefault();
       colEl.classList.add("drag-over");
     });
@@ -118,58 +136,26 @@ function render() {
       if (!colEl.contains(e.relatedTarget)) colEl.classList.remove("drag-over");
     });
     colEl.addEventListener("drop", (e) => {
-      if (!canDropOnColumn(col.id)) return;
+      if (draggingId === null) return;
       e.preventDefault();
-      if (inMode) {
-        reorderCard(draggingId, null, false); // 列の余白に落としたら一番下へ
-      } else {
-        moveCard(draggingId, col.id);
-      }
+      placeCard(draggingId, col.id, null, false);
     });
     board.appendChild(colEl);
   }
 }
 
-// 列見出しの下のボタン(優先度順・期限順・並べ替えモード)
-function toolbar(columnId, inMode) {
+// 列見出しの下のボタン(優先度順・期限順)
+function toolbar(columnId) {
   const bar = document.createElement("div");
   bar.className = "col-tools";
-
   for (const [mode, label] of [["priority", "優先度順"], ["due", "期限順"]]) {
     const b = document.createElement("button");
     b.textContent = label;
-    b.className = "tool-btn" + (sortState[columnId] === mode ? " active" : "");
-    b.disabled = inMode;
-    b.onclick = () => {
-      // 選択中のボタンをもう一度押すと解除して保存済みの並びに戻る
-      sortState[columnId] = sortState[columnId] === mode ? null : mode;
-      render();
-    };
+    b.className = "tool-btn";
+    b.onclick = () => sortColumn(columnId, mode);
     bar.appendChild(b);
   }
-
-  const m = document.createElement("button");
-  m.className = "tool-btn mode-btn" + (inMode ? " active" : "");
-  m.textContent = inMode ? "並べ替え完了" : "並べ替えモード";
-  m.onclick = () => {
-    if (inMode) {
-      reorderCols.delete(columnId);
-    } else {
-      sortState[columnId] = null; // 保存済みの並びでモードを始める
-      reorderCols.add(columnId);
-    }
-    render();
-  };
-  bar.appendChild(m);
   return bar;
-}
-
-// いまドラッグ中のカードを、この列に落としてよいか
-function canDropOnColumn(columnId) {
-  const dragged = cards.find((c) => c.id === draggingId);
-  if (!dragged) return false;
-  if (reorderCols.has(columnId)) return dragged.columnId === columnId; // モード中の列は同じ列内だけ
-  return !reorderCols.has(dragged.columnId);  // モード中の列からは出せない
 }
 
 function cardElement(c) {
@@ -209,20 +195,16 @@ function cardElement(c) {
     render();
   });
 
-  // 並べ替えモード中:カードの上半分/下半分で、前に入れるか後ろに入れるかを決める
-  const dragged = () => cards.find((x) => x.id === draggingId);
-  const isReorderTarget = () => {
-    const d = dragged();
-    return d && reorderCols.has(c.columnId) && d.columnId === c.columnId && d.id !== c.id;
-  };
+  // カードの上半分に落とすと、そのカードの前に入る。下半分なら後ろに入る
   const isAfter = (e) => {
     const r = el.getBoundingClientRect();
     return e.clientY > r.top + r.height / 2;
   };
   el.addEventListener("dragover", (e) => {
-    if (!isReorderTarget()) return;
+    if (draggingId === null) return;
     e.preventDefault();
     e.stopPropagation();
+    if (draggingId === c.id) return; // 自分自身の上には線を出さない
     el.classList.toggle("drop-after", isAfter(e));
     el.classList.toggle("drop-before", !isAfter(e));
   });
@@ -230,36 +212,13 @@ function cardElement(c) {
     el.classList.remove("drop-before", "drop-after");
   });
   el.addEventListener("drop", (e) => {
-    if (!isReorderTarget()) return;
+    if (draggingId === null) return;
     e.preventDefault();
     e.stopPropagation();
-    reorderCard(draggingId, c.id, isAfter(e));
+    if (draggingId === c.id) return; // 自分自身の上に落としたら、何も変わらない
+    placeCard(draggingId, c.columnId, c.id, isAfter(e));
   });
   return el;
-}
-
-// 別の列へ移動。移動先の一番上に入る。同じ列内では何もしない
-function moveCard(id, columnId) {
-  const c = cards.find((x) => x.id === id);
-  if (!c || c.columnId === columnId) return;
-  c.position = topPosition(columnId);
-  c.columnId = columnId;
-  render();
-}
-
-// 並べ替えモードでの並べ替え。targetId の前(または後)に入れ、列内の position を 1,2,3… に振り直す
-// targetId が null のときは一番下に入れる
-function reorderCard(id, targetId, after) {
-  const moving = cards.find((x) => x.id === id);
-  if (!moving) return;
-  const list = savedOrder(moving.columnId).filter((c) => c.id !== id);
-  let index = list.length;
-  if (targetId !== null) {
-    index = list.findIndex((c) => c.id === targetId) + (after ? 1 : 0);
-  }
-  list.splice(index, 0, moving);
-  list.forEach((c, i) => { c.position = i + 1; });
-  render();
 }
 
 // S-02
