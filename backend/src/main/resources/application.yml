@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: taskmanagement
+
+  # 一時的な設定: PostgreSQL を用意するまで、DB 関連の自動設定を使わない。
+  # DB を用意したら、この autoconfigure の部分を削除し、下の接続設定を有効にする。
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+
+  # datasource:
+  #   url: jdbc:postgresql://localhost:5432/taskmanagement
+  #   username: postgres
+  #   password: postgres
+  # jpa:
+  #   hibernate:
+  #     ddl-auto: validate
+  #   open-in-view: false
