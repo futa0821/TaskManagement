@@ -1,0 +1,23 @@
+# 開発用の PostgreSQL を起動する設定。
+# 起動: docker compose up -d / 停止: docker compose down(データは残る) / データも消す: docker compose down -v
+# ユーザー名・パスワードは学習用のローカル専用の値。本番では使わない。
+services:
+  db:
+    image: postgres:17
+    container_name: taskmanagement-db
+    environment:
+      POSTGRES_DB: taskmanagement
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d taskmanagement"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
