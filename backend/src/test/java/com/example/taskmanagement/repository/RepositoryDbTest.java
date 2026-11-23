@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -32,6 +33,14 @@ class RepositoryDbTest {
 
 	@Autowired
 	private CardRepository cardRepository;
+
+	// DB には data.sql のテストデータが入っている。「空の DB」を前提にしたこのテストのために、
+	// 各テストの最初に全部消す。テストは終わるとロールバックされるので、DB の中身は元に戻る。
+	@BeforeEach
+	void 前準備としてDBを空にする() {
+		cardRepository.deleteAllInBatch(); // カードを先に消す(カードが列を参照しているため)
+		columnRepository.deleteAllInBatch();
+	}
 
 	@Test
 	void 列とカードを保存して検索できる() {
