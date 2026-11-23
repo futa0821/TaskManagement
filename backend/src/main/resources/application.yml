@@ -8,6 +8,11 @@ spring:
     username: postgres
     password: postgres
 
+  # data.sql を、DB の種類に関係なく起動時に毎回実行する
+  sql:
+    init:
+      mode: always
+
   jpa:
     hibernate:
       # update: 起動時に、Entity に合わせてテーブルを自動で作る・足りない列を追加する(学習・開発用)。
@@ -15,6 +20,8 @@ spring:
     # 実行された SQL をログに出す(テーブルが作られる様子を確認するため)
     show-sql: true
     open-in-view: false
+    # Hibernate がテーブルを作ったあとで data.sql を実行する(順番の指定)
+    defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
